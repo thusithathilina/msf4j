@@ -13,16 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package org.wso2.msf4j.example;
+package org.wso2.msf4j.client.exception;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import feign.Response;
 
-public class ModelUtils {
-	public static final Gson GSON = new GsonBuilder().setPrettyPrinting()
-			.disableHtmlEscaping().create();
-
-	public static String toString(Object o) {
-		return GSON.toJson(o);
-	}
+public class ResourceNotFoundException extends ClientException {
+    public ResourceNotFoundException(String methodKey, Response response) {
+        super(methodKey, response);
+    }
 }

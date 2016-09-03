@@ -483,6 +483,33 @@
                 <artifactId>zipkin-tracing</artifactId>
                 <version>${msf4j.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.wso2.msf4j</groupId>
+                <artifactId>msf4j-client</artifactId>
+                <version>${msf4j.version}</version>
+            </dependency>
+            <!-- Feign client dependencies -->
+            <dependency>
+                <groupId>io.github.openfeign</groupId>
+                <artifactId>feign-httpclient</artifactId>
+                <version>${feign.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.openfeign</groupId>
+                <artifactId>feign-core</artifactId>
+                <version>${feign.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.openfeign</groupId>
+                <artifactId>feign-slf4j</artifactId>
+                <version>${feign.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.openfeign</groupId>
+                <artifactId>feign-gson</artifactId>
+                <version>${feign.version}</version>
+            </dependency>
+            <!-- Feign client dependencies - End -->
         </dependencies>
     </dependencyManagement>
     <dependencies>
@@ -563,6 +590,7 @@
         <maven.buildnumber.plugin.version>1.4</maven.buildnumber.plugin.version>
         <maven.shadeplugin.version>2.4.1</maven.shadeplugin.version>
         <maven.reallyexecutablejarplugin.version>1.5.0</maven.reallyexecutablejarplugin.version>
+        <feign.version>9.3.1</feign.version>
 
         <!-- Other dependency versions -->
         <maven.wagon.ssh.version>2.10</maven.wagon.ssh.version>

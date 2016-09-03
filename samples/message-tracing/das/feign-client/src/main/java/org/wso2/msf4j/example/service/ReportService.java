@@ -14,13 +14,18 @@
  * limitations under the License.
  */
 
-package org.wso2.msf4j.example;
+package org.wso2.msf4j.example.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.wso2.msf4j.example.exception.ClientException;
+import org.wso2.msf4j.client.MSF4JClientFactory;
+import org.wso2.msf4j.client.exception.ClientException;
+import org.wso2.msf4j.client.exception.ResourceNotFoundException;
+import org.wso2.msf4j.example.client.api.CustomerServiceAPI;
+import org.wso2.msf4j.example.client.api.InvoiceServiceAPI;
 import org.wso2.msf4j.example.exception.CustomerNotFoundException;
 import org.wso2.msf4j.example.exception.InvoiceNotFoundException;
+import org.wso2.msf4j.example.exception.ServerErrorException;
 import org.wso2.msf4j.example.model.Customer;
 import org.wso2.msf4j.example.model.Invoice;
 import org.wso2.msf4j.example.model.InvoiceReport;
@@ -38,12 +43,14 @@ import javax.ws.rs.core.Response;
 public class ReportService {
 
     private static final Logger log = LoggerFactory.getLogger(ReportService.class);
-    private static final String SERVICE_URL = "http://localhost:8080/";
+    private static final String CUSTOMER_SERVICE_URL = "http://localhost:8081/";
+    private static final String INVOICE_SERVICE_URL = "http://localhost:8082/";
     private static final String DAS_RECEIVER_URL = "http://localhost:9763/endpoints/msf4jtracereceiver";
-    private final InvoiceServiceAPI invoiceServiceClient = InvoiceServiceClient.getInstanceWithAnalytics(SERVICE_URL,
-            DAS_RECEIVER_URL);
-    private final CustomerServiceAPI customerServiceClient = CustomerServiceClient.getInstanceWithAnalytics
-            (SERVICE_URL, DAS_RECEIVER_URL);
+
+    private final CustomerServiceAPI customerServiceClient = MSF4JClientFactory.newFeignTracingClientInstance
+            (CustomerServiceAPI.class, CUSTOMER_SERVICE_URL, DAS_RECEIVER_URL, "CustomerServiceClient");
+    private InvoiceServiceAPI invoiceServiceClient = MSF4JClientFactory.newFeignTracingClientInstance(
+            InvoiceServiceAPI.class, INVOICE_SERVICE_URL, DAS_RECEIVER_URL, "InvoiceServiceClient");
 
     /**
      * Retrieves the invoice report for a given invoice ID.
@@ -56,26 +63,30 @@ public class ReportService {
     @Path("/invoice/{id}")
     @Produces({"application/json"})
     public Response getInvoiceReport(@PathParam("id") String id) throws InvoiceNotFoundException,
-            CustomerNotFoundException {
+            CustomerNotFoundException, ServerErrorException {
         InvoiceReport invoiceReport;
+        Invoice invoice;
         try {
-            Invoice invoice = invoiceServiceClient.getInvoice(id);
-            if (invoice == null) {
-                throw new InvoiceNotFoundException();
-            }
+            invoice = invoiceServiceClient.getInvoice(id);
             if (log.isDebugEnabled()) {
                 log.debug("Invoice retrieved: " + invoice.toString());
             }
+        } catch (ResourceNotFoundException e) {
+            throw new InvoiceNotFoundException(e);
+        } catch (ClientException e) {
+            throw new ServerErrorException();
+        }
+
+        try {
             Customer customer = customerServiceClient.getCustomer(invoice.getCustomerId());
-            if (customer == null) {
-                throw new CustomerNotFoundException();
-            }
             if (log.isDebugEnabled()) {
                 log.debug("Customer retrieved: " + customer.toString());
             }
             invoiceReport = new InvoiceReport(invoice, customer);
+        } catch (ResourceNotFoundException e) {
+            throw new CustomerNotFoundException(e);
         } catch (ClientException e) {
-            throw new InvoiceNotFoundException(e);
+            throw new ServerErrorException();
         }
 
         return Response.status(Response.Status.OK).entity(invoiceReport).build();

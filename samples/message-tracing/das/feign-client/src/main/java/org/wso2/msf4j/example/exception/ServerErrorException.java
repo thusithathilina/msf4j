@@ -13,15 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package org.wso2.msf4j.example;
+package org.wso2.msf4j.example.exception;
 
 import feign.Response;
-import feign.codec.ErrorDecoder;
-import org.wso2.msf4j.example.exception.ClientException;
 
-public class ClientErrorDecoder implements ErrorDecoder {
-    @Override
-    public Exception decode(String methodKey, Response response) {
-        return new ClientException(methodKey, response);
-    }
+public class ServerErrorException extends Exception {
+
 }

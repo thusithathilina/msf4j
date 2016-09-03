@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.wso2.msf4j.example;
+package org.wso2.msf4j.example.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +38,7 @@ public class CustomerService {
     private static final Logger log = LoggerFactory.getLogger(CustomerService.class);
     private Map<String, Customer> customerMap = new HashMap<>();
 
-    CustomerService() {
+    public CustomerService() {
         customerMap.put("C001", new Customer("C001", "Akila", "Perera", "DreamWorld!"));
     }
 

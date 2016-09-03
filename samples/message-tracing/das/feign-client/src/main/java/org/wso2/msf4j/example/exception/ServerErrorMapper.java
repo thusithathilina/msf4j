@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016 WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ *  Copyright (c) 2005-2014, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
  *
  *  WSO2 Inc. licenses this file to you under the Apache License,
  *  Version 2.0 (the "License"); you may not use this file except
@@ -16,10 +16,21 @@
  *  under the License.
  *
  */
-package org.wso2.msf4j.client;
+package org.wso2.msf4j.example.exception;
+
+import javax.ws.rs.core.Response;
+import javax.ws.rs.ext.ExceptionMapper;
 
 /**
- * MSF4J client.
+ * ExceptionMapper which handled CustomerNotFoundException.
  */
-public class Client {
+public class ServerErrorMapper implements ExceptionMapper<ServerErrorException> {
+
+    @Override
+    public Response toResponse(ServerErrorException ex) {
+        return Response.status(500).
+                entity(ex.getMessage() + " [from ServerErrorMapper]").
+                type("text/plain").
+                build();
+    }
 }

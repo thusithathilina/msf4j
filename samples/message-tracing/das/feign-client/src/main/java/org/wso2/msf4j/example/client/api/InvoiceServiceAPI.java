@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package org.wso2.msf4j.example;
+package org.wso2.msf4j.example.client.api;
 
 import feign.Param;
 import feign.RequestLine;
-import org.wso2.msf4j.example.exception.ClientException;
+import org.wso2.msf4j.client.exception.ClientException;
 import org.wso2.msf4j.example.model.Invoice;
 
 public interface InvoiceServiceAPI {

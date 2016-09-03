@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-package org.wso2.msf4j.example.exception;
+package org.wso2.msf4j.client.exception;
 
 import feign.Response;
 
