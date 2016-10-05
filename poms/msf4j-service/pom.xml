@@ -488,28 +488,6 @@
                 <artifactId>msf4j-client</artifactId>
                 <version>${msf4j.version}</version>
             </dependency>
-            <!-- Feign client dependencies -->
-            <dependency>
-                <groupId>io.github.openfeign</groupId>
-                <artifactId>feign-httpclient</artifactId>
-                <version>${feign.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.openfeign</groupId>
-                <artifactId>feign-core</artifactId>
-                <version>${feign.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.openfeign</groupId>
-                <artifactId>feign-slf4j</artifactId>
-                <version>${feign.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.openfeign</groupId>
-                <artifactId>feign-gson</artifactId>
-                <version>${feign.version}</version>
-            </dependency>
-            <!-- Feign client dependencies - End -->
         </dependencies>
     </dependencyManagement>
     <dependencies>

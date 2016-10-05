@@ -56,6 +56,7 @@ public class InvoiceService {
     public Response getCustomer(@PathParam("id") String id) throws InvoiceNotFoundException {
         Invoice invoice = invoiceMap.get(id);
         if (invoice == null) {
+            log.info("Request for non-existing invoice: " + id);
             throw new InvoiceNotFoundException("Invoice ID " + id + " not found");
         }
         return Response.status(Response.Status.OK).entity(invoice).build();

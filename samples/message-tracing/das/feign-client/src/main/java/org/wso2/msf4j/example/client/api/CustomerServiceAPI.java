@@ -18,11 +18,12 @@ package org.wso2.msf4j.example.client.api;
 
 import feign.Param;
 import feign.RequestLine;
-import org.wso2.msf4j.client.exception.ClientException;
+import org.wso2.msf4j.client.exception.RestException;
+import org.wso2.msf4j.example.client.exception.CustomerNotFoundRestException;
 import org.wso2.msf4j.example.model.Customer;
 
 public interface CustomerServiceAPI {
     // Customer service
     @RequestLine("GET /customer/{id}")
-    Customer getCustomer(@Param("id") String id) throws ClientException;
+    Customer getCustomer(@Param("id") String id) throws CustomerNotFoundRestException, RestException;
 }

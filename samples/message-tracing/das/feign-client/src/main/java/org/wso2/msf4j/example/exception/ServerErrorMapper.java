@@ -18,19 +18,23 @@
  */
 package org.wso2.msf4j.example.exception;
 
+import org.wso2.msf4j.example.model.ErrorResponse;
+
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 
 /**
- * ExceptionMapper which handled CustomerNotFoundException.
+ * ExceptionMapper which handled ServerErrorException.
  */
 public class ServerErrorMapper implements ExceptionMapper<ServerErrorException> {
 
+    private static final String ERROR_CODE = "10000";
+
     @Override
     public Response toResponse(ServerErrorException ex) {
-        return Response.status(500).
-                entity(ex.getMessage() + " [from ServerErrorMapper]").
-                type("text/plain").
-                build();
+        return Response.status(500)
+                .entity(new ErrorResponse(ERROR_CODE, ex.getMessage()))
+                .type("text/plain")
+                .build();
     }
 }

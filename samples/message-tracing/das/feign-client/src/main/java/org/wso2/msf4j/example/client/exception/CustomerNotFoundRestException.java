@@ -13,19 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package org.wso2.msf4j.client;
+package org.wso2.msf4j.example.client.exception;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import org.wso2.msf4j.client.exception.RestException;
 
-/**
- * Converts Object to gson
- */
-public class ModelUtils {
-    public static final Gson GSON = new GsonBuilder().setPrettyPrinting()
-            .disableHtmlEscaping().create();
+public class CustomerNotFoundRestException extends RestException {
+    private static final String ERROR_CODE = "30001";
 
-    public static String toString(Object o) {
-        return GSON.toJson(o);
+    @Override
+    public String getErrorCode() {
+        return ERROR_CODE;
     }
 }

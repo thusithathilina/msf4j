@@ -35,7 +35,6 @@ public class Application {
                 .addExceptionMapper(new EntityNotFoundMapper(), new CustomerNotFoundMapper())
                 .addInterceptor(new MSF4JTracingInterceptor("Customer-Service"))
                 .deploy(new CustomerService())
-                .deploy(new InvoiceService())
                 .start();
 
         new MicroservicesRunner(8082)

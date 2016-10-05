@@ -18,11 +18,12 @@ package org.wso2.msf4j.example.client.api;
 
 import feign.Param;
 import feign.RequestLine;
-import org.wso2.msf4j.client.exception.ClientException;
+import org.wso2.msf4j.client.exception.RestException;
+import org.wso2.msf4j.example.client.exception.InvoiceNotFoundRestException;
 import org.wso2.msf4j.example.model.Invoice;
 
 public interface InvoiceServiceAPI {
     // Invoice service
     @RequestLine("GET /invoice/{id}")
-    Invoice getInvoice(@Param("id") String id) throws ClientException;
+    Invoice getInvoice(@Param("id") String id) throws InvoiceNotFoundRestException, RestException;
 }

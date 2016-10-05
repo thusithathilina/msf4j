@@ -13,13 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package org.wso2.msf4j.client.exception;
+package org.wso2.msf4j.example.client.exception;
 
-import feign.Response;
+import org.wso2.msf4j.client.exception.RestException;
 
-public class ServerErrorException extends ClientException {
+public class InvoiceNotFoundRestException extends RestException {
+    private static final String ERROR_CODE = "30002";
 
-    public ServerErrorException(String methodKey, Response response) {
-        super(methodKey, response);
+    @Override
+    public String getErrorCode() {
+        return ERROR_CODE;
     }
+
 }

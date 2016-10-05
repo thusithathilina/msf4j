@@ -21,13 +21,13 @@ import org.slf4j.LoggerFactory;
 import org.wso2.msf4j.example.exception.CustomerNotFoundException;
 import org.wso2.msf4j.example.model.Customer;
 
+import java.util.HashMap;
+import java.util.Map;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * CustomerService resource class.
@@ -55,7 +55,7 @@ public class CustomerService {
     public Response getCustomer(@PathParam("id") String id) throws CustomerNotFoundException {
         Customer customer = customerMap.get(id);
         if (customer == null) {
-            log.error("Request for non-existing customer: " + id);
+            log.info("Request for non-existing customer: " + id);
             throw new CustomerNotFoundException("Customer ID " + id + " not found");
         }
         return Response.status(Response.Status.OK).entity(customer).build();

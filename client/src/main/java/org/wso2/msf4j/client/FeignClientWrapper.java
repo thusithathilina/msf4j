@@ -13,12 +13,27 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package org.wso2.msf4j.client.exception;
+package org.wso2.msf4j.client;
 
+import feign.Client;
+import feign.Request;
 import feign.Response;
 
-public class ResourceNotFoundException extends ClientException {
-    public ResourceNotFoundException(String methodKey, Response response) {
-        super(methodKey, response);
+import java.io.IOException;
+
+/**
+ * Wrapper for #Feign.Client
+ */
+public class FeignClientWrapper implements Client {
+
+    private final Client clientDelegate;
+
+    public FeignClientWrapper(Client client) {
+        this.clientDelegate = client;
+    }
+
+    @Override
+    public Response execute(Request request, Request.Options options) throws IOException {
+        return clientDelegate.execute(request, options);
     }
 }
