@@ -16,14 +16,15 @@
 
 package org.wso2.msf4j.internal.router;
 
-import com.google.common.base.Splitter;
-import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.wso2.msf4j.util.Utils;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -31,6 +32,8 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
+import javax.ws.rs.HEAD;
+import javax.ws.rs.OPTIONS;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
@@ -90,11 +93,42 @@ public final class MicroserviceMetadata {
         }
     }
 
+    /**
+     * Register given service object with the given base path. Path annotion of the service class will be ignore,
+     * instead use the provided base path.
+     *
+     * @param service HttpHandler object
+     * @param basePath Path the handler should be registered
+     */
+    public void addMicroserviceMetadata(final Object service, String basePath) {
+        //Store the services to call init and destroy on all services.
+        for (Method method : service.getClass().getMethods()) {
+            if (method.isAnnotationPresent(PostConstruct.class) || method.isAnnotationPresent(PreDestroy.class)) {
+                continue;
+            }
+
+            if (Modifier.isPublic(method.getModifiers()) && isHttpMethodAvailable(method)) {
+                String relativePath = "";
+                if (method.getAnnotation(Path.class) != null) {
+                    relativePath = method.getAnnotation(Path.class).value();
+                }
+                String absolutePath = String.format("%s/%s", basePath, relativePath);
+                patternRouter.add(absolutePath, new HttpResourceModel(absolutePath, method, service, false));
+            } else {
+                log.trace("Not adding method {}({}) to path routing like. " +
+                          "HTTP calls will not be routed to this method", method.getName(), method.getParameterTypes());
+            }
+        }
+
+    }
+
     private boolean isHttpMethodAvailable(Method method) {
         return method.isAnnotationPresent(GET.class) ||
                 method.isAnnotationPresent(PUT.class) ||
                 method.isAnnotationPresent(POST.class) ||
-                method.isAnnotationPresent(DELETE.class);
+                method.isAnnotationPresent(DELETE.class) ||
+                method.isAnnotationPresent(HEAD.class) ||
+                method.isAnnotationPresent(OPTIONS.class);
     }
 
     /**
@@ -172,9 +206,9 @@ public final class MicroserviceMetadata {
     getMatchedDestination(List<PatternPathRouter.RoutableDestination<HttpResourceModel>> routableDestinations,
                           String targetHttpMethod, String requestUri) {
 
-        Iterable<String> requestUriParts = Splitter.on('/').omitEmptyStrings().split(requestUri);
+        Iterable<String> requestUriParts = Collections.unmodifiableList(Utils.split(requestUri, "/", true));
         List<PatternPathRouter.RoutableDestination<HttpResourceModel>> matchedDestinations =
-                Lists.newArrayListWithExpectedSize(routableDestinations.size());
+                new ArrayList<>(routableDestinations.size());
         int maxExactMatch = 0;
         int maxGroupMatch = 0;
         int maxPatternLength = 0;
@@ -185,9 +219,8 @@ public final class MicroserviceMetadata {
 
             for (String httpMethod : resourceModel.getHttpMethod()) {
                 if (targetHttpMethod.equals(httpMethod)) {
-
-                    int exactMatch = getExactPrefixMatchCount(
-                            requestUriParts, Splitter.on('/').omitEmptyStrings().split(resourceModel.getPath()));
+                    int exactMatch = getExactPrefixMatchCount(requestUriParts, Collections
+                            .unmodifiableList(Utils.split(resourceModel.getPath(), "/", true)));
 
                     // When there are multiple matches present, the following precedence order is used -
                     // 1. template path that has highest exact prefix match with the url is chosen.

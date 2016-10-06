@@ -181,6 +181,11 @@ HTTP POST method. Specify that the resource method supports HTTP POST method.
 #####@DELETE
 HTTP DELETE method. Specify that the resource method supports HTTP DELETE method.
 
+#####@HEAD
+HTTP HEAD method. Specify that the resource method supports HTTP HEAD method.
+
+#####@OPTIONS
+HTTP OPTIONS method. Specify that the resource method supports HTTP OPTIONS method.
 
 ###Parameter level annotations
 #####@DefaultValue
@@ -285,7 +290,7 @@ WSO2 Data Analytics Server (DAS).
 
 The Metrics data will be published to WSO2 DAS periodically. However the HTTP Monitoring events are published on each request.
 
-For a detailed example, check out the [Metrics and HTTP Monitoring sample](samples/metrics-httpmon/metrics-httpmon-fatjar). 
+For a detailed example, check out the [Metrics and HTTP Monitoring sample](samples/http-monitoring). 
 
 ###Metrics Annotations
 
@@ -337,7 +342,7 @@ Monitor each HTTP request. This annotation can be used at the Class level and th
 ###HTTP Message Tracing
 MSF4J supports visual message tracing through user friendly dashboards in WSO2 DAS or Zipkin. MSF4J message tracing provides 
 a detailed insight to the complex microservices interactions in a system making monitoring, trouble shooting and optimization of 
-microservices very easy. Please check [WSO2 DAS Tracing](samples/wso2das-tracing) and [Zipkin Tracing](samples/zipkin-tracing) samples for more details.
+microservices very easy. Please check [WSO2 DAS Tracing](samples/message-tracing/das) and [Zipkin Tracing](samples/message-tracing/zipkin) samples for more details.
 
 
 ###Swagger Annotations
@@ -347,6 +352,14 @@ or through network traffic inspection.
 
 MSF4J supports all [Swagger annotations](https://github.com/swagger-api/swagger-core/wiki/Annotations-1.5.X) out of the box.
 
+To enable swagger support you need to add the following dependency to your project
+```xml
+<dependency>
+     <groupId>org.wso2.msf4j</groupId>
+     <artifactId>msf4j-swagger</artifactId>
+     <version>2.1.0-SNAPSHOT</version>
+</dependency>
+```
 In order to retrieve Swagger definitions of your microservice, go to <br/>http://&lt;host&gt;:&lt;port&gt;/swagger?path=&lt;service_base_path&gt;.
 
 e.g. [http://localhost:8080/swagger?path=/hello](http://localhost:8080/swagger?path=/hello)
