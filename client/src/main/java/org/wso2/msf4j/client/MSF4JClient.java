@@ -108,13 +108,13 @@ public class MSF4JClient<T> {
             return this;
         }
 
-        public MSF4JClient.Builder<T> enableCircuitBreaker() {
-            this.enableCircuitBreaker = true;
+        public MSF4JClient.Builder<T> enableCircuitBreaker(boolean enableCircuitBreaker) {
+            this.enableCircuitBreaker = enableCircuitBreaker;
             return this;
         }
 
-        public MSF4JClient.Builder<T> enableTracing() {
-            this.enableTracing = true;
+        public MSF4JClient.Builder<T> enableTracing(boolean enableTracing) {
+            this.enableTracing = enableTracing;
             return this;
         }
 

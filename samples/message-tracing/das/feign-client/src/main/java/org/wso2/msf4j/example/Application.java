@@ -42,11 +42,15 @@ public class Application {
                 .addInterceptor(new MSF4JTracingInterceptor("Invoice-Service"))
                 .deploy(new InvoiceService())
                 .start();
-        new MicroservicesRunner()
-                .addExceptionMapper(new EntityNotFoundMapper(), new CustomerNotFoundMapper(), new
-                        InvoiceNotFoundMapper())
-                .addInterceptor(new MSF4JTracingInterceptor("Report-Service"))
-                .deploy(new ReportService())
-                .start();
+        try {
+            new MicroservicesRunner()
+                    .addExceptionMapper(new EntityNotFoundMapper(), new CustomerNotFoundMapper(), new
+                            InvoiceNotFoundMapper())
+                    .addInterceptor(new MSF4JTracingInterceptor("Report-Service"))
+                    .deploy(new ReportService())
+                    .start();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

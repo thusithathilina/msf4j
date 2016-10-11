@@ -20,7 +20,9 @@ import feign.FeignException;
 import feign.hystrix.FallbackFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.wso2.msf4j.client.MSF4JClientFactory;
 import org.wso2.msf4j.client.MSF4JClient;
+import org.wso2.msf4j.client.MSF4JClientFactoryImpl;
 import org.wso2.msf4j.client.exception.RestException;
 import org.wso2.msf4j.example.client.api.CustomerServiceAPI;
 import org.wso2.msf4j.example.client.api.InvoiceServiceAPI;
@@ -57,7 +59,7 @@ public class ReportService {
     private final MSF4JClient<CustomerServiceAPI> customerServiceClient;
     private final MSF4JClient<InvoiceServiceAPI> invoiceServiceClient;
 
-    public ReportService() {
+    public ReportService() throws Exception {
         FallbackFactory<CustomerServiceAPI> customerServiceFallback = cause -> (id) -> {
             if (cause instanceof FeignException) {
                 return customerCachedMap.get(id);
@@ -72,17 +74,31 @@ public class ReportService {
             throw (RestException) cause;
         };
 
-        customerServiceClient = new MSF4JClient.Builder<CustomerServiceAPI>()
+        /*customerServiceClient = new MSF4JClient.Builder<CustomerServiceAPI>()
                 .analyticsEndpoint(DAS_RECEIVER_URL)
                 .apiClass(CustomerServiceAPI.class)
-                .enableCircuitBreaker()
-                .enableTracing()
+                //.enableCircuitBreaker()
+                //.enableTracing()
                 .instanceName("CustomerServiceClient")
                 .serviceEndpoint(CUSTOMER_SERVICE_URL)
                 .fallbackFactory(customerServiceFallback)
-                .build();
+                .build();*/
+        MSF4JClientFactory msf4JClientFactory = new MSF4JClientFactory();
+        customerServiceClient = msf4JClientFactory.createClient(
+                new MSF4JClientFactoryImpl(CustomerServiceAPI.class, "CustomerServiceClient", CUSTOMER_SERVICE_URL,
+                                           DAS_RECEIVER_URL, false, false, customerServiceFallback));
+        /*customerServiceClient = msf4JClientFactory
+                .createClient(CustomerServiceAPI.class, "CustomerServiceClient", CUSTOMER_SERVICE_URL,
+                              customerServiceFallback, DAS_RECEIVER_URL, false, false);*/
 
-        invoiceServiceClient = new MSF4JClient.Builder<InvoiceServiceAPI>()
+        invoiceServiceClient = msf4JClientFactory.createClient(
+                new MSF4JClientFactoryImpl(InvoiceServiceAPI.class, "InvoiceServiceClient", INVOICE_SERVICE_URL,
+                                           DAS_RECEIVER_URL, false, false, invoiceServiceFallback));
+        /*invoiceServiceClient = msf4JClientFactory
+                .createClient(InvoiceServiceAPI.class, "InvoiceServiceClient", INVOICE_SERVICE_URL,
+                              invoiceServiceFallback, DAS_RECEIVER_URL, false, false);*/
+
+        /*invoiceServiceClient = new MSF4JClient.Builder<InvoiceServiceAPI>()
                 .analyticsEndpoint(DAS_RECEIVER_URL)
                 .apiClass(InvoiceServiceAPI.class)
                 .enableCircuitBreaker()
@@ -90,7 +106,7 @@ public class ReportService {
                 .instanceName("InvoiceServiceClient")
                 .serviceEndpoint(INVOICE_SERVICE_URL)
                 .fallbackFactory(invoiceServiceFallback)
-                .build();
+                .build();*/
 
     }
 
