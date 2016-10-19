@@ -117,6 +117,7 @@ public class MSF4JSpringApplication {
         MSF4JSpringApplication application = new MSF4JSpringApplication(sources);
         ConfigurableApplicationContext context = application.run(args);
         application.applyInitializers(context);
+        context.refresh();
         return context;
     }
 
@@ -139,7 +140,7 @@ public class MSF4JSpringApplication {
 
         context.getEnvironment().getPropertySources().addFirst(new SimpleCommandLinePropertySource(args));
 
-        context.refresh();
+        //context.refresh();
         return context;
     }
 
