@@ -29,6 +29,8 @@ import org.wso2.carbon.transport.http.netty.listener.HTTPServerConnector;
 import org.wso2.carbon.transport.http.netty.listener.HTTPServerConnectorProvider;
 import org.wso2.carbon.transport.http.netty.listener.HTTPTransportListener;
 import org.wso2.carbon.transport.http.netty.listener.ServerConnectorController;
+import org.wso2.msf4j.interceptor.RequestInterceptor;
+import org.wso2.msf4j.interceptor.ResponseInterceptor;
 import org.wso2.msf4j.internal.DataHolder;
 import org.wso2.msf4j.internal.MSF4JMessageProcessor;
 import org.wso2.msf4j.internal.MicroservicesRegistryImpl;
@@ -36,7 +38,6 @@ import org.wso2.msf4j.internal.websocket.EndpointsRegistryImpl;
 import org.wso2.msf4j.util.RuntimeAnnotations;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -58,7 +59,7 @@ public class MicroservicesRunner {
     private long startTime = System.currentTimeMillis();
     private boolean isStarted;
     private MicroservicesRegistryImpl msRegistry = new MicroservicesRegistryImpl();
-    private EndpointsRegistryImpl endpointsRegistry = EndpointsRegistryImpl.getInstance();
+    private EndpointsRegistryImpl endpointsRegistry = new EndpointsRegistryImpl();
 
     /**
      * Creates a MicroservicesRunner instance which will be used for deploying microservices. Allows specifying
@@ -131,15 +132,39 @@ public class MicroservicesRunner {
     }
 
     /**
-     * Add an interceptor which will get called before &amp; after the deployed microservices are invoked. Multiple
-     * interceptors can be added.
+     * Register request interceptors.
      *
-     * @param interceptor The interceptor to be added.
+     * @param requestInterceptor interceptor instances
+     */
+    public MicroservicesRunner addGlobalRequestInterceptor(RequestInterceptor... requestInterceptor) {
+        checkState();
+        msRegistry.addGlobalRequestInterceptor(requestInterceptor);
+        return this;
+    }
+
+    /**
+     * Register response interceptors.
+     *
+     * @param responseInterceptor interceptor instances
+     */
+    public MicroservicesRunner addGlobalResponseInterceptor(ResponseInterceptor... responseInterceptor) {
+        checkState();
+        msRegistry.addGlobalResponseInterceptor(responseInterceptor);
+        return this;
+    }
+
+    /**
+     * Add an interceptor which will get called before &amp; after the deployed microservices are invoked.
+     * Multiple interceptors can be added
+     *
+     * @param interceptor interceptor The interceptor to be added.
      * @return this MicroservicesRunner object
+     * @deprecated
      */
     public MicroservicesRunner addInterceptor(Interceptor... interceptor) {
         checkState();
-        msRegistry.addInterceptor(interceptor);
+        msRegistry.addGlobalRequestInterceptor(interceptor);
+        msRegistry.addGlobalResponseInterceptor(interceptor);
         return this;
     }
 
@@ -182,6 +207,8 @@ public class MicroservicesRunner {
         for (int port : ports) {
             ListenerConfiguration listenerConfiguration = new ListenerConfiguration("netty-" + port, "0.0.0.0", port);
             DataHolder.getInstance().getMicroservicesRegistries().put(listenerConfiguration.getId(), msRegistry);
+            DataHolder.getInstance().getWebSocketEndpointsRegistries()
+                      .put(listenerConfiguration.getId(), endpointsRegistry);
             listenerConfigurations.add(listenerConfiguration);
         }
         transportsConfiguration.setListenerConfigurations(listenerConfigurations);
@@ -205,6 +232,8 @@ public class MicroservicesRunner {
                                                                  .setMessageProcessor(new MSF4JMessageProcessor());
                                                          DataHolder.getInstance().getMicroservicesRegistries()
                                                                    .put(serverConnector.getId(), msRegistry);
+                                                         DataHolder.getInstance().getWebSocketEndpointsRegistries()
+                                                                   .put(serverConnector.getId(), endpointsRegistry);
                                                      });
                                                  }
                                              });
@@ -233,7 +262,7 @@ public class MicroservicesRunner {
         handleServiceLifecycleMethods();
         serverConnectors.forEach(serverConnector -> {
             try {
-                serverConnector.start(Collections.emptyMap());
+                serverConnector.start();
                 isStarted = true;
                 log.info("Microservices server started in " + (System.currentTimeMillis() - startTime) + "ms");
             } catch (ServerConnectorException e) {

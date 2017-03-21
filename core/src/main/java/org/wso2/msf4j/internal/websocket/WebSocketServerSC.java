@@ -28,7 +28,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.wso2.carbon.kernel.startupresolver.RequiredCapabilityListener;
 import org.wso2.msf4j.internal.DataHolder;
+import org.wso2.msf4j.internal.MSF4JConstants;
 import org.wso2.msf4j.websocket.WebSocketEndpoint;
+
+import java.util.Map;
 
 /**
  * OSGi Service component for WebSocket server. This will identify the endpoints which are trying to identify
@@ -44,7 +47,6 @@ import org.wso2.msf4j.websocket.WebSocketEndpoint;
 public class WebSocketServerSC implements RequiredCapabilityListener {
 
     private static final Logger log = LoggerFactory.getLogger(WebSocketServerSC.class);
-    private EndpointsRegistryImpl endpointsRegistry = EndpointsRegistryImpl.getInstance();
 
     @Activate
     protected void start(final BundleContext bundleContext) {
@@ -65,7 +67,10 @@ public class WebSocketServerSC implements RequiredCapabilityListener {
         policy = ReferencePolicy.DYNAMIC,
         unbind = "removeEndpoint"
     )
-    protected void addEndpoint(WebSocketEndpoint endpoint) {
+    protected void addEndpoint(WebSocketEndpoint endpoint, Map properties) {
+        Object channelId = properties.get(MSF4JConstants.CHANNEL_ID);
+        EndpointsRegistryImpl endpointsRegistry =
+                DataHolder.getInstance().getWebSocketEndpointsRegistries().get(channelId);
         endpointsRegistry.addEndpoint(endpoint);
     }
 
@@ -74,7 +79,10 @@ public class WebSocketServerSC implements RequiredCapabilityListener {
      *
      * @param endpoint endpoint which should be removed from the registry.
      */
-    protected void removeEndpoint(WebSocketEndpoint endpoint) {
+    protected void removeEndpoint(WebSocketEndpoint endpoint, Map properties) {
+        Object channelId = properties.get(MSF4JConstants.CHANNEL_ID);
+        EndpointsRegistryImpl endpointsRegistry =
+                DataHolder.getInstance().getWebSocketEndpointsRegistries().get(channelId);
         endpointsRegistry.removeEndpoint(endpoint);
     }
 

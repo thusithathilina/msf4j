@@ -31,6 +31,7 @@ import org.wso2.carbon.messaging.TransportSender;
 import org.wso2.carbon.transport.http.netty.common.Constants;
 import org.wso2.msf4j.Request;
 import org.wso2.msf4j.Response;
+import org.wso2.msf4j.exception.InterceptorException;
 import org.wso2.msf4j.internal.router.HandlerException;
 import org.wso2.msf4j.internal.router.HttpMethodInfo;
 import org.wso2.msf4j.internal.router.HttpMethodInfoBuilder;
@@ -127,7 +128,8 @@ public class MSF4JMessageProcessor implements CarbonMessageProcessor {
                     carbonMessage.release();
                 }
             } else if (Constants.WEBSOCKET_PROTOCOL_NAME.equalsIgnoreCase(protocolName)) {
-                EndpointsRegistryImpl endpointsRegistry = EndpointsRegistryImpl.getInstance();
+                EndpointsRegistryImpl endpointsRegistry = DataHolder.getInstance().getWebSocketEndpointsRegistries()
+                                                  .get(carbonMessage.getProperty(MSF4JConstants.CHANNEL_ID));
                 PatternPathRouter.RoutableDestination<Object> routableEndpoint = null;
                 Session session = (Session) carbonMessage.getProperty(Constants.WEBSOCKET_SESSION);
                 String uri = (String) carbonMessage.getProperty(Constants.TO);
@@ -159,28 +161,20 @@ public class MSF4JMessageProcessor implements CarbonMessageProcessor {
         HttpResourceModel resourceModel = destination.getDestination();
         response.setMediaType(Util.getResponseType(request.getAcceptTypes(),
                 resourceModel.getProducesMediaTypes()));
-        InterceptorExecutor interceptorExecutor = new InterceptorExecutor(resourceModel, request, response,
-                                                                          currentMicroservicesRegistry
-                                                                                  .getInterceptors());
-        if (interceptorExecutor.execPreCalls()) { // preCalls can throw exceptions
-
-            HttpMethodInfoBuilder httpMethodInfoBuilder =
-                    new HttpMethodInfoBuilder().
-                            httpResourceModel(resourceModel).
-                            httpRequest(request).
-                            httpResponder(response).
-                            requestInfo(destination.getGroupNameValues());
-
-            HttpMethodInfo httpMethodInfo = httpMethodInfoBuilder.build();
-            if (httpMethodInfo.isStreamingSupported()) {
-                while (!(request.isEmpty() && request.isEomAdded())) {
-                    httpMethodInfo.chunk(request.getMessageBody());
-                }
-                httpMethodInfo.end();
-            } else {
-                httpMethodInfo.invoke(request, destination);
+        HttpMethodInfoBuilder httpMethodInfoBuilder =
+                new HttpMethodInfoBuilder().
+                        httpResourceModel(resourceModel).
+                        httpRequest(request).
+                        httpResponder(response).
+                        requestInfo(destination.getGroupNameValues());
+        HttpMethodInfo httpMethodInfo = httpMethodInfoBuilder.build();
+        if (httpMethodInfo.isStreamingSupported()) {
+            while (!(request.isEmpty() && request.isEomAdded())) {
+                httpMethodInfo.chunk(request.getMessageBody());
             }
-            interceptorExecutor.execPostCalls(response.getStatusCode()); // postCalls can throw exceptions
+            httpMethodInfo.end(request, httpMethodInfo, currentMicroservicesRegistry);
+        } else {
+            httpMethodInfo.invoke(destination, request, httpMethodInfo, currentMicroservicesRegistry);
         }
     }
 
@@ -230,7 +224,7 @@ public class MSF4JMessageProcessor implements CarbonMessageProcessor {
                 String upgrade = (String) carbonMessage.getProperty(Constants.UPGRADE);
                 if (Constants.UPGRADE.equalsIgnoreCase(connection) &&
                         Constants.WEBSOCKET_UPGRADE.equalsIgnoreCase(upgrade)) {
-                    handleWebSocketHandshake(carbonMessage, session);
+                    handleWebSocketHandshake(carbonMessage, session, routableEndpoint);
                 }
             } else if (org.wso2.carbon.messaging.Constants.STATUS_CLOSE.equals(statusCarbonMessage.getStatus())) {
                 handleCloseWebSocketMessage(statusCarbonMessage, routableEndpoint, session);
@@ -241,11 +235,8 @@ public class MSF4JMessageProcessor implements CarbonMessageProcessor {
         }
     }
 
-    private boolean handleWebSocketHandshake(CarbonMessage carbonMessage, Session session) {
-        EndpointsRegistryImpl endpointsRegistry = EndpointsRegistryImpl.getInstance();
-        String requestUri = (String) carbonMessage.getProperty(Constants.TO);
-        PatternPathRouter.RoutableDestination<Object>
-                routableEndpoint = endpointsRegistry.getRoutableEndpoint(requestUri);
+    private boolean handleWebSocketHandshake(CarbonMessage carbonMessage, Session session,
+                                             PatternPathRouter.RoutableDestination<Object> routableEndpoint) {
         Optional<Method> methodOptional = new EndpointDispatcher().getOnOpenMethod(routableEndpoint.getDestination());
         Map<String, String> paramValues = routableEndpoint.getGroupNameValues();
         try {

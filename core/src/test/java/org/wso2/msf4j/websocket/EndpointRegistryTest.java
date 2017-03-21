@@ -47,7 +47,7 @@ public class EndpointRegistryTest {
 
     private final String testText = "test";
     private TestEndpoint testEndpoint = new TestEndpoint();
-    private EndpointsRegistryImpl endpointsRegistry = EndpointsRegistryImpl.getInstance();
+    private EndpointsRegistryImpl endpointsRegistry = new EndpointsRegistryImpl();
     private CarbonMessage textCarbonMessage = new TextCarbonMessage(testText);
     private final String uri = "/test";
 
