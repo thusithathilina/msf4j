@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>org.wso2.msf4j</groupId>
+        <artifactId>msf4j-parent</artifactId>
+        <version>2.3.0-SNAPSHOT</version>
+        <relativePath>../poms/parent/pom.xml</relativePath>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>msf4j-deployer</artifactId>
+    <packaging>bundle</packaging>
+
+    <name>WSO2 MSF4J Deployer</name>
+    <description>WSO2 MSF4J Deployer</description>
+    <url>https://github.com/wso2/msf4j</url>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.wso2.eclipse.osgi</groupId>
+            <artifactId>org.eclipse.osgi</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.wso2.eclipse.osgi</groupId>
+            <artifactId>org.eclipse.osgi.services</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.wso2.carbon.deployment</groupId>
+            <artifactId>org.wso2.carbon.deployment.engine</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.wso2.msf4j</groupId>
+            <artifactId>msf4j-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.wso2.msf4j</groupId>
+            <artifactId>msf4j-spring</artifactId>
+        </dependency>
+
+        <!-- Test dependencies -->
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven.shared</groupId>
+            <artifactId>maven-invoker</artifactId>
+            <version>2.2</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.rat</groupId>
+                <artifactId>apache-rat-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>-Dmsf4jTestRunning</argLine>
+                    <suiteXmlFiles>
+                        <suiteXmlFile>src/test/resources/testng.xml</suiteXmlFile>
+                    </suiteXmlFiles>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+    <properties>
+        <private.package>org.wso2.msf4j.deployer.internal</private.package>
+        <export.package>
+            !org.wso2.msf4j.deployer.internal,
+            org.wso2.msf4j.deployer;version="${msf4j.version}"
+        </export.package>
+        <import.package>
+            org.wso2.msf4j.*;version="${msf4j.version}",
+            javax.annotation.*,
+            javax.ws.rs.*,
+            org.slf4j.*;version="${slf4j.version.range}",
+            org.osgi.framework.*;version="${osgi.framework.import.version.range}",
+            org.wso2.carbon.kernel.startupresolver.*;version="${carbon.kernel.version.range}",
+            org.wso2.carbon.deployment.engine.*;version="${carbon.deployment.version.range}",
+        </import.package>
+        <carbon.component>
+            startup.listener;componentName="wso2-microservices-deployer";requiredService="org.wso2.msf4j.MicroservicesRegistry",
+            osgi.service; objectClass="org.wso2.carbon.deployment.engine.Deployer";requiredByComponentName="carbon-transport-mgt"
+        </carbon.component>
+        <dynamic.import.package>*</dynamic.import.package>
+    </properties>
+</project>

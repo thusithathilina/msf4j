@@ -19,6 +19,7 @@ package org.wso2.msf4j;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import javax.ws.rs.ext.ExceptionMapper;
 
 /**
  * Interface that needs to be implemented for handle the registry.
@@ -28,4 +29,27 @@ public interface MicroservicesRegistry {
 
     Set<Object> getHttpServices();
 
+    void addService(Object... service);
+
+    void addService(String basePath, Object service);
+
+    void removeService(Object service);
+
+    void setSessionManager(SessionManager sessionManager);
+
+    void addInterceptor(Interceptor... interceptor);
+
+    void removeInterceptor(Interceptor interceptor);
+
+    void addExceptionMapper(ExceptionMapper... mapper);
+
+    void removeExceptionMapper(ExceptionMapper em);
+
+    void initServices();
+
+    void initService(Object httpService);
+
+    void preDestroyServices();
+
+    void preDestroyService(Object httpService);
 }
