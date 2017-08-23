@@ -43,7 +43,7 @@ You can use the [msf4j-microservice](archetypes) Maven [archetype](http://maven.
 
 ```
 mvn archetype:generate -DarchetypeGroupId=org.wso2.msf4j \
--DarchetypeArtifactId=msf4j-microservice -DarchetypeVersion=2.3.0-SNAPSHOT \
+-DarchetypeArtifactId=msf4j-microservice -DarchetypeVersion=2.4.0-m1 \
 -DgroupId=org.example -DartifactId=Hello-Service -Dversion=0.1-SNAPSHOT \
 -Dpackage=org.example.service -DserviceClass=HelloService
 ```
@@ -64,7 +64,7 @@ configuration. Click [here](poms/msf4j-service) for more information.
     <parent>
         <groupId>org.wso2.msf4j</groupId>
         <artifactId>msf4j-service</artifactId>
-        <version>2.3.0-SNAPSHOT</version>
+        <version>2.4.0-m1</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -243,7 +243,16 @@ Invoke by the container on newly constructed service instances after all depende
 ##### @PreDestroy
 Invoke by the container during server shutdown before the  container removes the service instance.
 
-For a detailed example, check out the lifecycle sample [here](https://github.com/wso2/msf4j/tree/master/samples/lifecycle). 
+For a detailed example, check out the lifecycle sample [here](https://github.com/wso2/msf4j/tree/master/samples/lifecycle).
+ 
+## MSF4J Interceptors
+
+Please do refer the following for complete instructions.
+
+* [General instructions](/samples/interceptor/README.md)
+* [MSF4J Interceptors - Stand alone mode instructions](/samples/interceptor/fatjar-interceptor-service/README.md)
+* [MSF4J Interceptors - Deployable Jar mode instructions ](/samples/interceptor/deployable-jar-interceptor-service/README.md)
+* [MSF4J Interceptors - OSGi mode instructions](/samples/interceptor/osgi-interceptor-service/README.md)
 
 ## Develop and configure MSF4J services using Spring framework
 
@@ -357,7 +366,7 @@ To enable swagger support you need to add the following dependency to your proje
 <dependency>
      <groupId>org.wso2.msf4j</groupId>
      <artifactId>msf4j-swagger</artifactId>
-     <version>2.2.2</version>
+     <version>2.4.0-m1</version>
 </dependency>
 ```
 In order to retrieve Swagger definitions of your microservice, go to <br/>http://&lt;host&gt;:&lt;port&gt;/swagger?path=&lt;service_base_path&gt;.

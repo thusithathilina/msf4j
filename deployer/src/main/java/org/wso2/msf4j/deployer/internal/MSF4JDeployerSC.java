@@ -27,8 +27,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.wso2.carbon.deployment.engine.Deployer;
 import org.wso2.carbon.kernel.startupresolver.RequiredCapabilityListener;
+import org.wso2.carbon.kernel.startupresolver.StartupServiceUtils;
 import org.wso2.msf4j.MicroservicesRegistry;
-import org.wso2.msf4j.deployer.MicroservicesDeployer;
 
 import java.util.Map;
 
@@ -74,7 +74,7 @@ public class MSF4JDeployerSC implements RequiredCapabilityListener {
     @Reference(
             name = "microservices-regitry",
             service = MicroservicesRegistry.class,
-            cardinality = ReferenceCardinality.MULTIPLE,
+            cardinality = ReferenceCardinality.AT_LEAST_ONE,
             policy = ReferencePolicy.DYNAMIC,
             unbind = "removeMicroservicesRegistry"
     )
@@ -83,6 +83,7 @@ public class MSF4JDeployerSC implements RequiredCapabilityListener {
             log.debug("MicroservicesRegistry get registered successfully.");
         }
         DataHolder.getInstance().addMicroserviceRegistry(properties.get(CHANNEL_ID).toString(), registry);
+        StartupServiceUtils.updateServiceCache("wso2-microservices-deployer", MicroservicesRegistry.class);
     }
 
     protected void removeMicroservicesRegistry(MicroservicesRegistry microservicesRegistry, Map properties) {

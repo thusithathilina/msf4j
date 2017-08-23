@@ -25,14 +25,19 @@ import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.wso2.carbon.config.provider.ConfigProvider;
 import org.wso2.carbon.kernel.startupresolver.RequiredCapabilityListener;
-import org.wso2.carbon.kernel.transports.CarbonTransport;
+import org.wso2.carbon.kernel.startupresolver.StartupServiceUtils;
+import org.wso2.carbon.messaging.CarbonMessageProcessor;
+import org.wso2.carbon.messaging.ServerConnector;
 import org.wso2.msf4j.DefaultSessionManager;
 import org.wso2.msf4j.Interceptor;
 import org.wso2.msf4j.Microservice;
 import org.wso2.msf4j.MicroservicesRegistry;
 import org.wso2.msf4j.SessionManager;
 import org.wso2.msf4j.SwaggerService;
+import org.wso2.msf4j.exception.OSGiDeclarativeServiceException;
+import org.wso2.msf4j.interceptor.OSGiInterceptorConfig;
 import org.wso2.msf4j.util.RuntimeAnnotations;
 
 import java.util.Arrays;
@@ -80,6 +85,7 @@ public class MicroservicesServerSC implements RequiredCapabilityListener {
             Object contextPath = properties.get("contextPath");
             addMicroserviceToRegistry(service, channelId, contextPath);
         }
+        StartupServiceUtils.updateServiceCache("wso2-microservices-server", Microservice.class);
     }
 
     protected void removeService(Microservice service, Map properties) {
@@ -91,6 +97,8 @@ public class MicroservicesServerSC implements RequiredCapabilityListener {
             if (microservicesRegistry != null) {
                 microservicesRegistry.removeService(service);
             }
+        } else {
+            microservicesRegistries.values().forEach(registry -> registry.removeService(service));
         }
     }
 
@@ -129,25 +137,73 @@ public class MicroservicesServerSC implements RequiredCapabilityListener {
     }
 
     @Reference(
-            name = "carbon-transport",
-            service = CarbonTransport.class,
+            name = "http-connector-provider",
+            service = ServerConnector.class,
             cardinality = ReferenceCardinality.AT_LEAST_ONE,
             policy = ReferencePolicy.DYNAMIC,
             unbind = "removeCarbonTransport"
     )
-    protected void addCarbonTransport(CarbonTransport carbonTransport) {
+    protected void addCarbonTransport(ServerConnector serverConnector) {
         MicroservicesRegistryImpl microservicesRegistry = new MicroservicesRegistryImpl();
         Map<String, MicroservicesRegistryImpl> microservicesRegistries =
                 DataHolder.getInstance().getMicroservicesRegistries();
         Dictionary<String, String> properties = new Hashtable<>();
-        properties.put(MSF4JConstants.CHANNEL_ID, carbonTransport.getId());
-        microservicesRegistries.put(carbonTransport.getId(), microservicesRegistry);
+        properties.put(MSF4JConstants.CHANNEL_ID, serverConnector.getId());
+        microservicesRegistries.put(serverConnector.getId(), microservicesRegistry);
         DataHolder.getInstance().getBundleContext()
                   .registerService(MicroservicesRegistry.class, microservicesRegistry, properties);
+        StartupServiceUtils.updateServiceCache("wso2-microservices-server", ServerConnector.class);
     }
 
-    protected void removeCarbonTransport(CarbonTransport carbonTransport) {
-        DataHolder.getInstance().getMicroservicesRegistries().remove(carbonTransport.getId());
+    protected void removeCarbonTransport(ServerConnector serverConnector) {
+        DataHolder.getInstance().getMicroservicesRegistries().remove(serverConnector.getId());
+    }
+
+    @Reference(
+            name = "carbon.config.provider",
+            service = ConfigProvider.class,
+            cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.DYNAMIC,
+            unbind = "unregisterConfigProvider"
+    )
+    protected void registerConfigProvider(ConfigProvider configProvider) {
+        DataHolder.getInstance().setConfigProvider(configProvider);
+        StartupServiceUtils.updateServiceCache("wso2-microservices-server", ConfigProvider.class);
+    }
+
+    protected void unregisterConfigProvider(ConfigProvider configProvider) {
+        DataHolder.getInstance().setConfigProvider(null);
+    }
+
+    @Reference(
+            name = "interceptor-config",
+            service = OSGiInterceptorConfig.class,
+            cardinality = ReferenceCardinality.MULTIPLE,
+            policy = ReferencePolicy.DYNAMIC,
+            unbind = "removeInterceptorConfig"
+    )
+    protected void addInterceptorConfig(OSGiInterceptorConfig interceptorConfig, Map properties) {
+        StartupServiceUtils.updateServiceCache("wso2-microservices-server", OSGiInterceptorConfig.class);
+    }
+
+    protected void removeInterceptorConfig(OSGiInterceptorConfig interceptorConfig, Map properties) {
+        Object channelId = properties.get(MSF4JConstants.CHANNEL_ID);
+        Map<String, MicroservicesRegistryImpl> microservicesRegistries =
+                DataHolder.getInstance().getMicroservicesRegistries();
+        if (channelId != null) {
+            MicroservicesRegistryImpl microServicesRegistry = microservicesRegistries.get(channelId.toString());
+            Arrays.stream(interceptorConfig.getGlobalRequestInterceptorArray()).forEach(
+                    microServicesRegistry::removeGlobalRequestInterceptor);
+            Arrays.stream(interceptorConfig.getGlobalResponseInterceptorArray()).forEach(
+                    microServicesRegistry::removeGlobalResponseInterceptor);
+        } else {
+            microservicesRegistries.values().forEach(registry -> {
+                Arrays.stream(interceptorConfig.getGlobalRequestInterceptorArray()).forEach(
+                        registry::removeGlobalRequestInterceptor);
+                Arrays.stream(interceptorConfig.getGlobalResponseInterceptorArray()).forEach(
+                        registry::removeGlobalResponseInterceptor);
+            });
+        }
     }
 
     @Reference(
@@ -158,14 +214,28 @@ public class MicroservicesServerSC implements RequiredCapabilityListener {
             unbind = "removeInterceptor"
     )
     protected void addInterceptor(Interceptor interceptor, Map properties) {
+        StartupServiceUtils.updateServiceCache("wso2-microservices-server", Interceptor.class);
     }
 
+    /**
+     * Remove interceptor.
+     *
+     * @param interceptor interceptor to be removed
+     * @param properties  map of interceptor component properties
+     * @deprecated
+     */
     protected void removeInterceptor(Interceptor interceptor, Map properties) {
         Object channelId = properties.get(MSF4JConstants.CHANNEL_ID);
         Map<String, MicroservicesRegistryImpl> microservicesRegistries =
                 DataHolder.getInstance().getMicroservicesRegistries();
         if (channelId != null) {
-            microservicesRegistries.get(channelId.toString()).removeInterceptor(interceptor);
+            microservicesRegistries.get(channelId.toString()).removeGlobalRequestInterceptor(interceptor);
+            microservicesRegistries.get(channelId.toString()).removeGlobalResponseInterceptor(interceptor);
+        } else {
+            microservicesRegistries.values().forEach(registry -> {
+                registry.removeGlobalRequestInterceptor(interceptor);
+                registry.removeGlobalResponseInterceptor(interceptor);
+            });
         }
     }
 
@@ -185,6 +255,8 @@ public class MicroservicesServerSC implements RequiredCapabilityListener {
                 DataHolder.getInstance().getMicroservicesRegistries();
         if (channelId != null) {
             microservicesRegistries.get(channelId.toString()).removeExceptionMapper(exceptionMapper);
+        } else {
+            microservicesRegistries.values().forEach(registry -> registry.removeExceptionMapper(exceptionMapper));
         }
     }
 
@@ -202,11 +274,13 @@ public class MicroservicesServerSC implements RequiredCapabilityListener {
         Object channelId = properties.get(MSF4JConstants.CHANNEL_ID);
         Map<String, MicroservicesRegistryImpl> microservicesRegistries =
                 DataHolder.getInstance().getMicroservicesRegistries();
+        sessionManager.stop();
+        DefaultSessionManager defaultSessionManager = new DefaultSessionManager();
+        defaultSessionManager.init();
         if (channelId != null) {
-            sessionManager.stop();
-            DefaultSessionManager defaultSessionManager = new DefaultSessionManager();
-            defaultSessionManager.init();
             microservicesRegistries.get(channelId.toString()).setSessionManager(defaultSessionManager);
+        } else {
+            microservicesRegistries.values().forEach(registry -> registry.setSessionManager(defaultSessionManager));
         }
     }
 
@@ -222,6 +296,19 @@ public class MicroservicesServerSC implements RequiredCapabilityListener {
                     Object channelId = serviceReference.getProperty(MSF4JConstants.CHANNEL_ID);
                     Object contextPath = serviceReference.getProperty("contextPath");
                     addMicroserviceToRegistry(service, channelId, contextPath);
+                });
+            }
+
+            // Add request and response interceptors
+            serviceReferences = DataHolder.getInstance().getBundleContext()
+                                          .getServiceReferences(OSGiInterceptorConfig.class.getName(), null);
+            if (serviceReferences != null && serviceReferences.length > 0) {
+                Arrays.stream(serviceReferences).forEach(serviceReference -> {
+                    OSGiInterceptorConfig interceptorConfig =
+                            (OSGiInterceptorConfig) DataHolder.getInstance().getBundleContext()
+                                                              .getService(serviceReference);
+                    Object channelId = serviceReference.getProperty(MSF4JConstants.CHANNEL_ID);
+                    addRequestResponseInterceptorsToRegistry(interceptorConfig, channelId);
                 });
             }
 
@@ -263,6 +350,8 @@ public class MicroservicesServerSC implements RequiredCapabilityListener {
             isAllRequiredCapabilitiesAvailable = true;
         }
 
+        DataHolder.getInstance().getBundleContext()
+                  .registerService(CarbonMessageProcessor.class, new MSF4JMessageProcessor(), null);
         DataHolder.getInstance().getBundleContext().registerService(MicroservicesServerSC.class, this, null);
         log.info("All microservices are available");
     }
@@ -295,17 +384,53 @@ public class MicroservicesServerSC implements RequiredCapabilityListener {
         }
     }
 
+    /**
+     * Add request and response interceptors to registry.
+     *
+     * @param interceptorConfig interceptor configuration
+     * @param channelId         micro-service channel id
+     */
+    private void addRequestResponseInterceptorsToRegistry(OSGiInterceptorConfig interceptorConfig, Object channelId) {
+        Map<String, MicroservicesRegistryImpl> microservicesRegistries =
+                DataHolder.getInstance().getMicroservicesRegistries();
+        if (channelId != null) {
+            MicroservicesRegistryImpl microservicesRegistry = microservicesRegistries.get(channelId.toString());
+            if (microservicesRegistry == null) {
+                throw new OSGiDeclarativeServiceException("Couldn't find the registry for channel ID " +
+                                                          channelId);
+            }
+            microservicesRegistry.addGlobalRequestInterceptor(interceptorConfig.getGlobalRequestInterceptorArray());
+            microservicesRegistry.addGlobalResponseInterceptor(interceptorConfig.getGlobalResponseInterceptorArray());
+        } else {
+            microservicesRegistries.values().forEach(registry -> {
+                registry.addGlobalRequestInterceptor(interceptorConfig.getGlobalRequestInterceptorArray());
+                registry.addGlobalResponseInterceptor(interceptorConfig.getGlobalResponseInterceptorArray());
+            });
+        }
+    }
+
+    /**
+     * Add interceptor to registry.
+     *
+     * @param interceptor interceptor
+     * @param channelId   micro-service channel it
+     */
+    @Deprecated
     private void addInterceptorToRegistry(Interceptor interceptor, Object channelId) {
         Map<String, MicroservicesRegistryImpl> microservicesRegistries =
                 DataHolder.getInstance().getMicroservicesRegistries();
         if (channelId != null) {
             MicroservicesRegistryImpl microservicesRegistry = microservicesRegistries.get(channelId.toString());
             if (microservicesRegistry == null) {
-                throw new RuntimeException("Couldn't found the registry for channel ID " + channelId);
+                throw new OSGiDeclarativeServiceException("Couldn't found the registry for channel ID " + channelId);
             }
-            microservicesRegistry.addInterceptor(interceptor);
+            microservicesRegistry.addGlobalRequestInterceptor(interceptor);
+            microservicesRegistry.addGlobalResponseInterceptor(interceptor);
         } else {
-            microservicesRegistries.values().forEach(registry -> registry.addInterceptor(interceptor));
+            microservicesRegistries.values().forEach(registry -> {
+                registry.addGlobalRequestInterceptor(interceptor);
+                registry.addGlobalResponseInterceptor(interceptor);
+            });
         }
     }
 

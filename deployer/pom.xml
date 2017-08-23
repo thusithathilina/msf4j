@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.wso2.msf4j</groupId>
         <artifactId>msf4j-parent</artifactId>
-        <version>2.3.0-SNAPSHOT</version>
+        <version>2.4.0-SNAPSHOT</version>
         <relativePath>../poms/parent/pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
@@ -105,7 +105,7 @@
         </import.package>
         <carbon.component>
             startup.listener;componentName="wso2-microservices-deployer";requiredService="org.wso2.msf4j.MicroservicesRegistry",
-            osgi.service; objectClass="org.wso2.carbon.deployment.engine.Deployer";requiredByComponentName="carbon-transport-mgt"
+            osgi.service; objectClass="org.wso2.carbon.deployment.engine.Deployer"
         </carbon.component>
         <dynamic.import.package>*</dynamic.import.package>
     </properties>

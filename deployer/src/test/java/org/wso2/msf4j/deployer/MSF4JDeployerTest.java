@@ -30,6 +30,7 @@ import org.testng.annotations.Test;
 import org.wso2.carbon.deployment.engine.Artifact;
 import org.wso2.carbon.deployment.engine.exception.CarbonDeploymentException;
 import org.wso2.msf4j.MicroservicesRunner;
+import org.wso2.msf4j.deployer.internal.MicroservicesDeployer;
 import org.wso2.msf4j.internal.MicroservicesRegistryImpl;
 
 import java.io.File;
@@ -55,8 +56,8 @@ import static org.testng.AssertJUnit.assertTrue;
  */
 public class MSF4JDeployerTest {
 
-    public static final String HOSTNAME = "localhost";
-    public static final int PORT = 8090;
+    private static final String HOSTNAME = "localhost";
+    private static final int PORT = 8090;
     private MicroservicesDeployer deployer;
     private static final String HEADER_KEY_CONNECTION = "CONNECTION";
     private static final String HEADER_VAL_CLOSE = "CLOSE";
