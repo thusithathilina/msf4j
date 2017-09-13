@@ -27,6 +27,8 @@ import org.wso2.msf4j.deployer.MicroserviceDeploymentException;
 import org.wso2.msf4j.deployer.MicroserviceDeploymentUtils;
 
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Arrays;
@@ -49,6 +51,7 @@ public class MicroservicesDeployer implements Deployer {
     private URL deploymentLocation;
     private ArtifactType artifactType;
     private Map<Object, List<Object>> deployedArtifacts = new HashMap<>();
+    private static final String MSF4J_SPRING_APP_RUNNER_CLASS = "org.wso2.msf4j.spring.MSF4JSpringApplication";
 
     public void init() {
         if (log.isDebugEnabled()) {
@@ -88,13 +91,30 @@ public class MicroservicesDeployer implements Deployer {
                 throw new CarbonDeploymentException("No classes to initialize in artifact: " + artifactPath);
             }
 
-            boolean deployed = resourcesList.stream()
+            // Hnalde spring application deployment
+            if (resourcesList.size() == 1 && resourcesList.get(0) instanceof String) {
+                try {
+                    Class<?> aClass = Class.forName(MSF4J_SPRING_APP_RUNNER_CLASS);
+                    Method run = aClass.getMethod("run", String[].class);
+                    run.invoke(null, resourcesList.get(0), new String[]{});
+                } catch (ClassNotFoundException e) {
+                    log.error("Couldn't find class: " + MSF4J_SPRING_APP_RUNNER_CLASS, e);
+                } catch (NoSuchMethodException e) {
+                    log.error("Couldn't find method: " + MSF4J_SPRING_APP_RUNNER_CLASS + "#run", e);
+                } catch (InvocationTargetException e) {
+                    log.error("Error while deploying Spring Application ", e);
+                } catch (IllegalAccessException e) {
+                    log.error("Error while deploying Spring Application ", e);
+                }
+            }
+            // handle MSF4J services deployment
+            boolean isNotDeployed = resourcesList.stream()
                     .filter(resource -> resource instanceof Microservice)
                     .map(resource -> addService((Microservice) resource))
                     .anyMatch(result -> result == Boolean.FALSE);
 
-            if (!deployed) {
-                // If one service not deployed correctly, process should retry later.
+            if (!isNotDeployed) {
+                // If one service not isNotDeployed correctly, process should retry later.
                 artifact.setKey(artifactPath);
                 deployedArtifacts.put(artifactPath, resourcesList);
                 return artifactPath;

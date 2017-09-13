@@ -156,6 +156,7 @@
                         <archive>
                             <manifestEntries>
                                 <Microservices>${microservice.resourceClasses}</Microservices>
+                                <MSF4JSpringServices>${microservice.spring.basepackage}</MSF4JSpringServices>
                             </manifestEntries>
                         </archive>
                     </configuration>

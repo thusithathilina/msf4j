@@ -20,6 +20,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.wso2.msf4j.spring.transport.HTTPTransportConfig;
 
+/**
+ * TransportConfig bean.
+ */
 @Configuration
 public class TransportConfiguration {
 
