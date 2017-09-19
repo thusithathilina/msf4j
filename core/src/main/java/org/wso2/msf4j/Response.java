@@ -16,12 +16,11 @@
 
 package org.wso2.msf4j;
 
-import org.wso2.carbon.messaging.CarbonCallback;
-import org.wso2.carbon.messaging.CarbonMessage;
-import org.wso2.carbon.messaging.DefaultCarbonMessage;
 import org.wso2.carbon.messaging.Header;
 import org.wso2.carbon.messaging.Headers;
 import org.wso2.carbon.transport.http.netty.common.Constants;
+import org.wso2.carbon.transport.http.netty.contract.ServerConnectorException;
+import org.wso2.carbon.transport.http.netty.message.HTTPCarbonMessage;
 import org.wso2.msf4j.internal.MSF4JConstants;
 import org.wso2.msf4j.internal.entitywriter.EntityWriter;
 import org.wso2.msf4j.internal.entitywriter.EntityWriterRegistry;
@@ -43,22 +42,22 @@ public class Response {
     public static final int NO_CHUNK = 0;
     public static final int DEFAULT_CHUNK_SIZE = -1;
 
-    private final CarbonMessage carbonMessage;
-    private final CarbonCallback carbonCallback;
+    private final HTTPCarbonMessage httpCarbonMessage;
     private int statusCode = NULL_STATUS_CODE;
     private String mediaType = null;
     private Object entity;
     private int chunkSize = NO_CHUNK;
     private Request request;
     private javax.ws.rs.core.Response jaxrsResponse;
+    private final HTTPCarbonMessage responder;
 
-    public Response(CarbonCallback carbonCallback) {
-        carbonMessage = new DefaultCarbonMessage();
-        this.carbonCallback = carbonCallback;
+    public Response(HTTPCarbonMessage responder) {
+        httpCarbonMessage = new HTTPCarbonMessage();
+        this.responder = responder;
     }
 
-    public Response(CarbonCallback carbonCallback, Request request) {
-        this(carbonCallback);
+    public Response(Request request) {
+        this(request.getHttpCarbonMessage());
         this.request = request;
     }
 
@@ -66,35 +65,35 @@ public class Response {
      * @return true if message is fully available in the response object
      */
     public boolean isEomAdded() {
-        return carbonMessage.isEndOfMsgAdded();
+        return httpCarbonMessage.isEndOfMsgAdded();
     }
 
     /**
      * @return returns true if the message body is empty
      */
     public boolean isEmpty() {
-        return carbonMessage.isEmpty();
+        return httpCarbonMessage.isEmpty();
     }
 
     /**
      * @return next available message body chunk
      */
     public ByteBuffer getMessageBody() {
-        return carbonMessage.getMessageBody();
+        return httpCarbonMessage.getMessageBody();
     }
 
     /**
      * @return complete content of the response object
      */
     public List<ByteBuffer> getFullMessageBody() {
-        return carbonMessage.getFullMessageBody();
+        return httpCarbonMessage.getFullMessageBody();
     }
 
     /**
      * @return map of headers in the response object
      */
     public Headers getHeaders() {
-        return carbonMessage.getHeaders();
+        return httpCarbonMessage.getHeaders();
     }
 
     /**
@@ -104,7 +103,7 @@ public class Response {
      * @return value of the header
      */
     public String getHeader(String key) {
-        return carbonMessage.getHeader(key);
+        return httpCarbonMessage.getHeader(key);
     }
 
     /**
@@ -115,7 +114,7 @@ public class Response {
      * @return Response object
      */
     public Response setHeader(String key, String value) {
-        carbonMessage.setHeader(key, value);
+        httpCarbonMessage.setHeader(key, value);
         return this;
     }
 
@@ -125,7 +124,7 @@ public class Response {
      * @param headerMap headers to be added to the response
      */
     public void setHeaders(Map<String, String> headerMap) {
-        carbonMessage.setHeaders(headerMap);
+        httpCarbonMessage.setHeaders(headerMap);
     }
 
     /**
@@ -135,14 +134,14 @@ public class Response {
      * @return property value
      */
     public Object getProperty(String key) {
-        return carbonMessage.getProperty(key);
+        return httpCarbonMessage.getProperty(key);
     }
 
     /**
      * @return map of properties in the CarbonMessage
      */
     public Map<String, Object> getProperties() {
-        return carbonMessage.getProperties();
+        return httpCarbonMessage.getProperties();
     }
 
     /**
@@ -152,14 +151,14 @@ public class Response {
      * @param value property value
      */
     public void setProperty(String key, Object value) {
-        carbonMessage.setProperty(key, value);
+        httpCarbonMessage.setProperty(key, value);
     }
 
     /**
      * @param key remove the header with this name
      */
     public void removeHeader(String key) {
-        carbonMessage.removeHeader(key);
+        httpCarbonMessage.removeHeader(key);
     }
 
     /**
@@ -168,14 +167,14 @@ public class Response {
      * @param key property key
      */
     public void removeProperty(String key) {
-        carbonMessage.removeProperty(key);
+        httpCarbonMessage.removeProperty(key);
     }
 
     /**
      * @return the underlining CarbonMessage object
      */
-    public CarbonMessage getCarbonMessage() {
-        return carbonMessage;
+    public HTTPCarbonMessage getHttpCarbonMessage() {
+        return httpCarbonMessage;
     }
 
     /**
@@ -222,7 +221,7 @@ public class Response {
      * @return Response object
      */
     public Response setEntity(Object entity) {
-        if (!carbonMessage.isEmpty()) {
+        if (!httpCarbonMessage.isEmpty()) {
             throw new IllegalStateException("CarbonMessage should not contain a message body");
         }
         if (entity instanceof javax.ws.rs.core.Response) {
@@ -259,7 +258,7 @@ public class Response {
      * Send the HTTP response using the content in this object.
      */
     public void send() {
-        carbonMessage.setProperty(Constants.HTTP_STATUS_CODE, getStatusCode());
+        httpCarbonMessage.setProperty(Constants.HTTP_STATUS_CODE, getStatusCode());
 
         List<Header> cookiesHeader = new ArrayList<>();
 
@@ -281,7 +280,7 @@ public class Response {
         if (session != null && session.isValid() && session.isNew()) {
             cookiesHeader.add(new Header("Set-Cookie", MSF4JConstants.SESSION_ID + session.getId()));
         }
-        carbonMessage.getHeaders().set(cookiesHeader);
+        httpCarbonMessage.getHeaders().set(cookiesHeader);
         processEntity();
     }
 
@@ -289,11 +288,15 @@ public class Response {
     private void processEntity() {
         if (entity != null) {
             EntityWriter entityWriter = EntityWriterRegistry.getEntityWriter(entity.getClass());
-            entityWriter.writeData(carbonMessage, entity, mediaType, chunkSize, carbonCallback);
+            entityWriter.writeData(httpCarbonMessage, entity, mediaType, chunkSize, responder);
         } else {
-            carbonMessage.addMessageBody(ByteBuffer.allocate(0));
-            carbonMessage.setEndOfMsgAdded(true);
-            carbonCallback.done(carbonMessage);
+            httpCarbonMessage.addMessageBody(ByteBuffer.allocate(0));
+            httpCarbonMessage.setEndOfMsgAdded(true);
+            try {
+                request.getHttpCarbonMessage().respond(httpCarbonMessage);
+            } catch (ServerConnectorException e) {
+                throw new RuntimeException("Error while sending the response.", e);
+            }
         }
     }
 }
