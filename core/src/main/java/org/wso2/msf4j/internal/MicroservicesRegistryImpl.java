@@ -15,6 +15,9 @@
  */
 package org.wso2.msf4j.internal;
 
+import io.grpc.BindableService;
+import io.grpc.ServerServiceDefinition;
+import io.grpc.netty.NettyServerBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.wso2.msf4j.DefaultSessionManager;
@@ -53,6 +56,7 @@ public class MicroservicesRegistryImpl implements MicroservicesRegistry {
 
     private static final Logger log = LoggerFactory.getLogger(MicroservicesRegistryImpl.class);
     private final Map<String, Object> services = new HashMap<>();
+    private final Map<String, BindableService> gprcServices = new HashMap<>();
     private List<RequestInterceptor> globalRequestInterceptorList = new ArrayList<>();
     private List<ResponseInterceptor> globalResponseInterceptorList = new ArrayList<>();
     private volatile MicroserviceMetadata metadata = new MicroserviceMetadata(Collections.emptyMap());
@@ -266,5 +270,9 @@ public class MicroservicesRegistryImpl implements MicroservicesRegistry {
     private boolean isValidLifecycleMethod(Optional<Method> method, Class lcAnnotation) {
         return method.filter(m -> Modifier.isPublic(m.getModifiers())
                 && m.getAnnotation(lcAnnotation) != null).isPresent();
+    }
+
+    public void addGprcService(String path, BindableService serverServiceDefinition) {
+        gprcServices.put(path, serverServiceDefinition);
     }
 }

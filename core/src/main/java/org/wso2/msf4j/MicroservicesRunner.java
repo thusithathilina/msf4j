@@ -15,6 +15,7 @@
  */
 package org.wso2.msf4j;
 
+import io.grpc.BindableService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.wso2.carbon.messaging.ServerConnector;
@@ -89,6 +90,11 @@ public class MicroservicesRunner {
     public MicroservicesRunner deploy(Object... microservice) {
         checkState();
         msRegistry.addService(microservice);
+        return this;
+    }
+
+    public MicroservicesRunner deployGPRCService(String basePath, BindableService gprcService) {
+        msRegistry.addGprcService(basePath, gprcService);
         return this;
     }
 
